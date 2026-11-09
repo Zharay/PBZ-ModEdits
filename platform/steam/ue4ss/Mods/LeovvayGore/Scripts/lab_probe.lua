@@ -356,7 +356,8 @@ end
 -- outside the beta)
 function LAB.pinned() return st.pinned end
 -- Its answer by cause, for the Mods Menu Status row (main.lua, adapter/modsmenu.lua MENU.word): nil before init and
--- before the check, 'none' outside the beta, else 'pinned', 'waived' (other_ue4ss took an unlisted loader), 'loader'
+-- before the check, 'none' outside the beta, else 'pinned', 'override' (version pins bypassed),
+-- 'waived' (other_ue4ss took an unlisted loader), 'loader'
 -- (only the loader failed, no waiver) or 'game' (the game build, the ARM key or the pin table failed). No IO
 function LAB.pin_state()
     if not A then return nil end
@@ -726,6 +727,7 @@ end
 -- only, every LAB.armed call stays armed and LAB.hot keeps its first-read arming. Knob off: today's path, the same
 -- records. Load-only: pin_check runs once a session and a later flip waits for the next game start (17 consumers read
 -- the session verdict; lab_kill fixes st.tier once, lab_corpse closes corpse.keep for the session)
+-- override_versions waives all three pins, including unknown values, but leaves signatures and sentinels intact.
 local PIN_KEYS = { 'game_build', 'arm_key', 'loader' }
 local function pin_ok(k, got, want)
     if type(want) == 'string' and got == want then return true end
@@ -742,6 +744,13 @@ local function pin_check(t)
     local got = { game_build = tostring(h.game_build or 'unknown'), arm_key = key or 'unknown',
         loader = tostring(type(h.loader) == 'table' and h.loader.commit or 'unknown') }
     local want, tbl = cfg.pins, type(cfg.pins) == 'table'
+    if C.knob('override_versions') == true then
+        st.pinned, st.pin_state = true, 'override'
+        LAB.seed(cfg.seed, 'override', { pins = got, waived = PIN_KEYS })
+        LAB.rec('versions_overridden', { pins = got, want = tbl and want or 'none', loaders = cfg.loaders,
+            warning = 'Untested versions: crashes or broken effects are possible; runtime safety checks remain active.' }, true)
+        return
+    end
     local ok, other = tbl, not tbl                      -- other: a key but the loader failed (no pin table: all)
     for _, k in ipairs(PIN_KEYS) do
         if not tbl or type(want[k]) ~= 'string' or not pin_ok(k, got[k], want[k]) then

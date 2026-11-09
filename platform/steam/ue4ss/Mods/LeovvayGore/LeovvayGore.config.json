@@ -1,0 +1,22 @@
+{
+  "status": "Version checks bypassed",
+  "effects_blood": true,
+  "blood_amount": 2,
+  "drops": true,
+  "soul_blood": true,
+  "soul_face_blood": true,
+  "sword_blood": true,
+  "soul_blood_life_s": 300,
+  "wash_on_heal": true,
+  "cut_chance": 100,
+  "max_parts": 3,
+  "heavy_parts": 2,
+  "shaqi_parts": 3,
+  "hair_mode": "burst",
+  "extras_fall": true,
+  "other_ue4ss": true,
+  "override_versions": true,
+  "cap_look": "native",
+  "cap_scale": 1,
+  "corpse_keep_s": 900
+}

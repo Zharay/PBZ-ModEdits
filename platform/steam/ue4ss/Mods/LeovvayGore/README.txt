@@ -21,6 +21,9 @@ WHAT GETS CUT
   enemies.
 
 REQUIREMENTS
+Local experimental option: "override_versions": true bypasses the game, engine build key and UE4SS version
+checks below. It does not fix compatibility, bypass signature checks or disable the safety switch. Untested
+versions may crash or have broken effects. Default: false. Restart the game after changing it.
 - Phantom Blade Zero, Steam build 26266538 only. After a game update, this mod may need an update too.
 - For cuts: Ultra+ for Phantom Blade Zero, installed with Ultra+ Manager from https://theultraplace.com/installing/.
   If Ultra+ Manager does not list the game, point it at the game folder. Ultra+ brings UE4SS 3.0.1 build 1185 or
@@ -82,8 +85,8 @@ IN-GAME SETTINGS (OPTIONAL)
   straight away. LeovvayGore has its own section there: Blood, Blood on Soul and sword, Cuts, Stumps and Bodies.
 - The Status row at the top of that section says whether everything runs, or what is off and why (for example
   Cuts off: UE4SS build). Its help says what to do.
-- A change applies within about two seconds and stays for the next start. Cuts on other UE4SS builds is the one
-  row that waits for the next start.
+- A change applies within about two seconds and stays for the next start. Cuts on other UE4SS builds and
+  Override version checks (experimental) wait for the next start.
 - The menu's values live in LeovvayGore.config.json in the mod's folder; the mod makes it at its first start. The
   settings file keeps working: a key you change there by hand, with the game closed, wins at the next start.
 - If LeovvayGore.config.json gets damaged, LeovvayGore leaves the menu until the next start, which writes the file
@@ -138,6 +141,12 @@ SETTINGS FILE
 - "hair_mode": "keep": heads with long cloth hair fly off with their hair instead of bursting ("burst" is the
   default).
 - "extras_fall": false: masks and hats vanish with the head instead of falling.
+- "override_versions": true: try all features regardless of game, engine build key or UE4SS version, including
+  unreadable versions. Also available as Override version checks (experimental) in Mods Menu. Default: false;
+  changing it requires a restart. The Status row says Version checks bypassed (or Some effects off if the safety
+  switch disabled a call), and the log records versions_overridden with the actual and expected versions.
+  This overrides the version pins only, not signature checks, crash protection or feature settings. If it crashes
+  or effects break, set it back to false and restart. It does not change "other_ue4ss".
 - "corpse_keep_s": 900: how many seconds enemy bodies lie before they go, out of sight (900 is 15 minutes, the
   default, up to 3600; 0 lets the game dissolve them at once). "corpse_max" (60) is the most kept at once.
 - "soul_blood_life_s": 300: how many seconds the blood stays on you and your weapons (300 is the default; 0 keeps it
@@ -167,6 +176,8 @@ keeps working. Both files are in platform/steam/ue4ss/Mods/LeovvayGore.
 - To switch everything back on: close the game and delete disabled.json and strikes.json.
 
 KNOWN ISSUES
+- The local override_versions option can waive the version restrictions below for testing; compatibility is
+  not guaranteed, and the existing runtime checks may still stop effects on an incompatible update.
 - Beta: tested on Steam build 26266538 with UE4SS 3.0.1 build 1185. Install by hand; Vortex: not tested yet.
 - Cuts come on only with Steam build 26266538 and UE4SS 3.0.1 build 1185 or 1195 (Git SHA #dff435dd or #1ceefac8).
   With another game build there are no cuts, no flying drops and no blood on the sword, and bodies fade as in the

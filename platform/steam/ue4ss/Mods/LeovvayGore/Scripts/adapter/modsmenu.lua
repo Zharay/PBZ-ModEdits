@@ -113,6 +113,7 @@ MENU.MAP = {
     { key = 'extras_fall', kind = 'bool', eff = knob('extras_fall') },
     -- lab_probe pin_check: the loader waiver (fixes-0.2.2 F4), read once per session: the next game start
     { key = 'other_ue4ss', kind = 'bool', eff = knob('other_ue4ss') },
+    { key = 'override_versions', kind = 'bool', eff = knob('override_versions') },
     { key = 'cap_look', kind = 'word', words = K.cap_look.words, eff = knob('cap_look') },
     knob_num('cap_scale'), knob_num('corpse_keep_s'),
 }
@@ -344,13 +345,18 @@ MENU.WORDS = {
     effects = { en = 'Some effects off', ['zh-Hans'] = '\u{90E8}\u{5206}\u{6548}\u{679C}\u{5DF2}\u{5173}\u{95ED}',
         ['zh-Hant'] = '\u{90E8}\u{5206}\u{6548}\u{679C}\u{5DF2}\u{95DC}\u{9589}',
         vi = '\u{110}\u{E3} t\u{1EAF}t m\u{1ED9}t s\u{1ED1} hi\u{1EC7}u \u{1EE9}ng' },
+    override = { en = 'Version checks bypassed',
+        ['zh-Hans'] = '\u{5DF2}\u{8DF3}\u{8FC7}\u{7248}\u{672C}\u{68C0}\u{67E5}',
+        ['zh-Hant'] = '\u{5DF2}\u{7565}\u{904E}\u{7248}\u{672C}\u{6AA2}\u{67E5}',
+        vi = 'B\u{1ECF} qua ki\u{1EC3}m tra phi\u{EA}n b\u{1EA3}n' },
     all = { en = 'All on', ['zh-Hans'] = '\u{5168}\u{90E8}\u{5F00}\u{542F}', ['zh-Hant'] = '\u{5168}\u{90E8}\u{958B}\u{555F}',
         vi = 'T\u{1EA5}t c\u{1EA3} \u{111}\u{1EC1}u b\u{1EAD}t' },
 }
 
 -- The word id for s = { off, vanilla, pin, disabled } (main.lua's source), first match: off, vanilla, starting (no pin
 -- answer yet: pin nil), ue4ss (pin 'loader'), game (pin 'game'), waived, effects (a disabled name known counts; known
--- nil: any name), all. pin 'none' (no beta pin check) and 'pinned' go on to the disabled names. nil for no table
+-- nil: any name), override, all. pin 'none' (no beta pin check) and 'pinned' go on to the disabled names.
+-- The override warning also yields to disabled effects. nil for no table
 function MENU.word(s, known)
     if type(s) ~= 'table' then return nil end
     if s.off then return 'off' end
@@ -363,6 +369,7 @@ function MENU.word(s, known)
     for _, n in ipairs(type(s.disabled) == 'table' and s.disabled or {}) do
         if known == nil or known[n] then return 'effects' end
     end
+    if pin == 'override' then return 'override' end
     return 'all'
 end
 

@@ -125,6 +125,8 @@ local DEFAULTS = {
     -- META.beta_loaders does not list. Load-only: lab_probe's pin check reads it once a session, so a change takes
     -- effect at the next game start. The player request F4 (Nexus 178901185, spec fixes-0.2.2 D6); false is today
     other_ue4ss = false,
+    -- Experimental, load-only: waive game, engine build key and loader pins, not runtime safety checks.
+    override_versions = false,
     -- <<gore:defaults>>
 }
 C.DEFAULTS = DEFAULTS
@@ -167,6 +169,7 @@ C.KNOBS = {
     drops = {}, drops_n = { lo = 0, hi = 24, int = true }, drops_max = { lo = 8, hi = 128, int = true },
     slicer = {}, soul_blood = {}, soul_face_blood = {}, sword_blood = {},
     cut_chance = { lo = 0, hi = 100, int = true }, other_ue4ss = {}, finisher_cuts = {},
+    override_versions = {},
 }
 C.LOG_LEVELS = { debug = true, info = true, warn = true, error = true }
 -- MIGRATIONS[n] = function(s, M) -> report | nil, run for every n above the file's version, in order. M.base: the
