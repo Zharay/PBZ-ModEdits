@@ -398,7 +398,7 @@ class InkRenderer {
             this.system.SetWidgetSlot(this.root, slot);
             (0, native_1.log)('viewport ' + JSON.stringify({ width: size.X, height: size.Y, dpi, visibleInkHeight: size.Y * .15 * g.zoom }));
         }
-        const { scale, tw, th, tx, ty } = g;
+        const { scaleY, tw, th, tx, ty } = g;
         this.baseSlot.SetPosition((0, native_1.v2)(tx, ty));
         this.baseSlot.SetSize((0, native_1.v2)(tw, th));
         this.root.SetRenderOpacity(Math.max(0, Math.min(1, opacity)));
@@ -409,8 +409,8 @@ class InkRenderer {
                 continue;
             }
             const from = Math.max(0, Math.min(1, band.from)), to = Math.max(0, Math.min(1, band.to));
-            const top = ty + (layout_1.INNER_TOP + layout_1.INNER_HEIGHT * (1 - to)) * scale;
-            const bottom = ty + (layout_1.INNER_TOP + layout_1.INNER_HEIGHT * (1 - from)) * scale;
+            const top = ty + (layout_1.INNER_TOP + layout_1.INNER_HEIGHT * (1 - to)) * scaleY;
+            const bottom = ty + (layout_1.INNER_TOP + layout_1.INNER_HEIGHT * (1 - from)) * scaleY;
             layer.clip.SetRenderOpacity(band.opacity);
             layer.clipSlot.SetPosition((0, native_1.v2)(tx, top));
             layer.clipSlot.SetSize((0, native_1.v2)(tw, Math.max(0, bottom - top)));
@@ -435,14 +435,16 @@ exports.geometry = geometry;
 exports.buffPosition = buffPosition;
 exports.INNER_TOP = 245.2;
 exports.INNER_HEIGHT = 1041.6;
-function geometry(width, height, dpi, settings = { X: 60, Y: 50, Scale: 100 }) {
+function geometry(width, height, dpi, settings = { X: 60, Y: 50, Scale: 100, BarScaleX: 100, BarScaleY: 100 }) {
     if (!Number.isFinite(width + height + dpi) || width <= 0 || height <= 0 || dpi <= 0)
         throw new Error('Invalid viewport');
     const vw = width / dpi, vh = height / dpi, zoom = settings.Scale / 100, scale = vh * .15 * zoom / 1488;
     const cx = vw * settings.X / 100, cy = vh * settings.Y / 100;
-    return { vw, vh, scale, zoom, cx, cy, bodyHeight: vh * .15 * zoom,
-        tx: cx - (326 + 471 / 2) * scale, ty: cy - (22 + 1488 / 2) * scale,
-        tw: 1024 * scale, th: 1536 * scale };
+    const scaleX = scale * (settings.BarScaleX ?? 100) / 100, scaleY = scale * (settings.BarScaleY ?? 100) / 100;
+    // Keep the shared icon geometry unchanged; only ink dimensions use these scales.
+    return { vw, vh, scale, scaleX, scaleY, zoom, cx, cy, bodyHeight: vh * .15 * zoom,
+        tx: cx - (326 + 471 / 2) * scaleX, ty: cy - (22 + 1488 / 2) * scaleY,
+        tw: 1024 * scaleX, th: 1536 * scaleY };
 }
 function buffPosition(index, g, iconSize) {
     const row = index % 3, column = Math.floor(index / 3), angle = (row - 1) * Math.PI / 3;
@@ -773,14 +775,15 @@ exports.parseSettings = parseSettings;
 const UE = require("ue");
 const puerts_1 = require("puerts");
 const native_1 = require("./native");
-exports.DEFAULTS = Object.freeze({ X: 60, Y: 50, Scale: 100, Buffs: true });
+exports.DEFAULTS = Object.freeze({ X: 60, Y: 50, Scale: 100, BarScaleX: 100, BarScaleY: 100, Buffs: true });
 const host = globalThis;
 const text = (en, zh) => ({ en, 'zh-Hans': zh });
 function checked(key, value) {
     const s = String(value ?? '').trim();
     if (key === 'Buffs')
         return /^(on|true|1)$/i.test(s) ? true : /^(off|false|0)$/i.test(s) ? false : exports.DEFAULTS.Buffs;
-    const n = Number(s), min = key === 'Scale' ? 50 : 0, max = key === 'Scale' ? 200 : 100;
+    const isScale = key === 'Scale' || key === 'BarScaleX' || key === 'BarScaleY';
+    const n = Number(s), min = isScale ? 50 : 0, max = isScale ? 200 : 100;
     return s !== '' && Number.isFinite(n) ? Math.max(min, Math.min(max, n)) : exports.DEFAULTS[key];
 }
 function parseSettings(source) {
@@ -817,18 +820,22 @@ class Settings {
             }
             if (menu !== this.registered) {
                 menu.push({ id: 'PhantomHUD', title: 'PhantomHUD', version: '0.3.0', file: 'PhantomHUD.txt',
-                    description: text('Ink HUD position, size and buff visibility. Close Settings to see the result.', '调整墨痕 HUD 的位置、大小和 Buff 显示。关闭设置菜单后查看效果。'),
+                    description: text('Ink HUD position, overall size, independent bar width/height and buff visibility. Close Settings to see the result.', '调整墨痕 HUD 的位置、整体大小、独立的墨痕宽高和 Buff 显示。关闭设置菜单后查看效果。'),
                     settings: [
                         { key: 'X', type: 'number', slider: true, label: text('Horizontal position (%)', '水平位置（%）'), min: 0, max: 100, step: 1, default: exports.DEFAULTS.X,
                             help: text('Ink center, measured from the left edge. Default: 60%.', '以墨痕中心为锚点，从屏幕左边起算。默认 60%。') },
                         { key: 'Y', type: 'number', slider: true, label: text('Vertical position (%)', '垂直位置（%）'), min: 0, max: 100, step: 1, default: exports.DEFAULTS.Y,
                             help: text('Ink center, measured from the top edge. Default: 50%.', '以墨痕中心为锚点，从屏幕上边起算。默认 50%。') },
                         { key: 'Scale', type: 'number', slider: true, label: text('HUD scale (%)', 'HUD 整体缩放（%）'), min: 50, max: 200, step: 5, default: exports.DEFAULTS.Scale,
-                            help: text('Scales the ink and copied buffs together. At 100%, ink height is 15% of the screen.', '同时缩放墨痕和复制的 Buff。100% 时墨痕高度为屏幕高度的 15%。') },
+                            help: text('Scales the ink and copied buffs together. With bar height at 100%, ink height is 15% of the screen at HUD scale 100%.', '同时缩放墨痕和复制的 Buff。墨痕高度和 HUD 整体缩放均为 100% 时，墨痕高度为屏幕高度的 15%。') },
+                        { key: 'BarScaleX', type: 'number', slider: true, label: text('Bar width (%)', '墨痕宽度（%）'), min: 50, max: 200, step: 5, default: exports.DEFAULTS.BarScaleX,
+                            help: text('Scales only the ink-base and ink-fill images horizontally around the ink center. Buff size and position stay unchanged. Default: 100%.', '仅以墨痕中心为锚点水平缩放 ink-base 和 ink-fill 图像。Buff 大小和位置保持不变。默认 100%。') },
+                        { key: 'BarScaleY', type: 'number', slider: true, label: text('Bar height (%)', '墨痕高度（%）'), min: 50, max: 200, step: 5, default: exports.DEFAULTS.BarScaleY,
+                            help: text('Scales only the ink-base and ink-fill images vertically around the ink center. Buff size and position stay unchanged. Default: 100%.', '仅以墨痕中心为锚点垂直缩放 ink-base 和 ink-fill 图像。Buff 大小和位置保持不变。默认 100%。') },
                         { key: 'Buffs', type: 'toggle', label: text('Show buffs', '显示 Buff'), default: exports.DEFAULTS.Buffs,
                             help: text('Controls only the copied buffs beside the ink. Original buffs stay unchanged.', '只控制墨痕旁的 Buff 副本，原版 Buff 显示保持不变。') },
                     ],
-                    // Mods Menu supplies its own Restore defaults row and persists all four defaults.
+                    // Mods Menu supplies its own Restore defaults row and persists all defaults.
                     onChange: (key, value) => {
                         if (!this.stopped && host.PBZModsMenu === menu && Object.prototype.hasOwnProperty.call(exports.DEFAULTS, key))
                             Object.assign(this.values, { [key]: checked(key, value) });
