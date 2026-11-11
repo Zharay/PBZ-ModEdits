@@ -334,7 +334,7 @@ const UE = require("ue");
 const native_1 = require("./native");
 const layout_1 = require("./layout");
 const settings_1 = require("./settings");
-// Preserve the original bar dimensions. MirrorX flips only the local artwork;
+// Preserve the original bar dimensions at 100%. MirrorX flips only the local artwork;
 // MirrorY swaps the two regions without reversing either bar's fill direction.
 const HAS_HEALTH = false;
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -442,6 +442,13 @@ class InkRenderer {
             return;
         }
         const g = (0, layout_1.geometry)(size.X, size.Y, dpi, settings);
+        const scaleX = clamp(percent(settings.BarScaleX), .5, 2), scaleY = clamp(percent(settings.BarScaleY), .5, 2);
+        // Scale artwork and fill clipping together without changing buff geometry.
+        g.tx = g.cx + (g.tx - g.cx) * scaleX;
+        g.ty = g.cy + (g.ty - g.cy) * scaleY;
+        g.tw *= scaleX;
+        g.th *= scaleY;
+        g.scale *= scaleY;
         if (g.vw !== this.width || g.vh !== this.height) {
             this.width = g.vw;
             this.height = g.vh;
@@ -831,7 +838,7 @@ const puerts_1 = require("puerts");
 const native_1 = require("./native");
 // Replaced with false only when bundling the existing single-bar edition.
 const HAS_HEALTH = false;
-exports.DEFAULTS = Object.freeze({ X: 60, Y: 50, Scale: 100, Buffs: true,
+exports.DEFAULTS = Object.freeze({ X: 60, Y: 50, Scale: 100, BarScaleX: 100, BarScaleY: 100, Buffs: true,
     MirrorX: false, MirrorY: false, HealthOpacity: 100, EnergyOpacity: 100,
     BuffSize: 100, BuffOpacity: 100, HideNativeHealth: false, HideNativeEnergy: false, HideNativeBuffs: false });
 const host = globalThis;
@@ -846,8 +853,9 @@ function checked(key, value) {
     const n = Number(s);
     if (s === '' || !Number.isFinite(n))
         return exports.DEFAULTS[key];
-    const min = key === 'Scale' || key === 'BuffSize' ? 50 : 0;
-    const max = key === 'Scale' || key === 'BuffSize' ? 200 : 100;
+    const isScale = ['Scale', 'BarScaleX', 'BarScaleY', 'BuffSize'].includes(key);
+    const min = isScale ? 50 : 0;
+    const max = isScale ? 200 : 100;
     // Preserve the original position and scale handling. New numeric rows use
     // the same five-point grid as the 0.6.2 custom size/opacity controls.
     const snapped = ['X', 'Y', 'Scale'].includes(key) ? n : Math.round(n / 5) * 5;
@@ -887,7 +895,7 @@ class Settings {
             }
             if (menu !== this.registered) {
                 menu.push({ id: 'PhantomHUD', title: 'PhantomHUD', version: '0.5.1', file: 'PhantomHUD.txt',
-                    description: text('Ink position, horizontal mirroring, bar order and opacity. Close Settings to see the result.', '调整墨痕的位置、左右镜像、上下条顺序和透明度。关闭设置菜单后查看效果。'),
+                    description: text('Ink position, width, height, horizontal mirroring, bar order and opacity. Close Settings to see the result.', '调整墨痕的位置、宽度、高度、左右镜像、上下条顺序和透明度。关闭设置菜单后查看效果。'),
                     settings: [
                         { key: 'X', type: 'number', slider: true, label: text('Horizontal position (%)', '水平位置（%）'), min: 0, max: 100, step: 1, default: exports.DEFAULTS.X,
                             help: text('Ink center, measured from the left edge. Default: 60%.', '以墨痕中心为锚点，从屏幕左边起算。默认 60%。') },
@@ -895,6 +903,8 @@ class Settings {
                             help: text('Ink center, measured from the top edge. Default: 50%.', '以墨痕中心为锚点，从屏幕上边起算。默认 50%。') },
                         { key: 'Scale', type: 'number', slider: true, label: text('HUD scale (%)', 'HUD 整体缩放（%）'), min: 50, max: 200, step: 5, default: exports.DEFAULTS.Scale,
                             help: text('Scales ink and copied buffs together. At 100%, ink height is ' + (HAS_HEALTH ? '25%' : '15%') + ' of the screen.', '同时缩放墨痕和复制的 Buff。100% 时墨痕高度为屏幕高度的 ' + (HAS_HEALTH ? '25%' : '15%') + '。') },
+                        numberRow('BarScaleX', 'Ink bar width (%)', '墨痕条宽度（%）', 50, 200, 'Scales only the ink base and fill horizontally around the ink center, in addition to HUD scale. Buff size and position stay unchanged. Default: 100%.', '在 HUD 整体缩放基础上，仅以墨痕中心为锚点水平缩放底图和填充图，不改变 Buff 大小和位置。默认 100%。'),
+                        numberRow('BarScaleY', 'Ink bar height (%)', '墨痕条高度（%）', 50, 200, 'Scales only the ink base and fill vertically around the ink center, in addition to HUD scale. Buff size and position stay unchanged. Default: 100%.', '在 HUD 整体缩放基础上，仅以墨痕中心为锚点垂直缩放底图和填充图，不改变 Buff 大小和位置。默认 100%。'),
                         { key: 'Buffs', type: 'toggle', label: text('Show buffs', '显示 Buff'), default: exports.DEFAULTS.Buffs,
                             help: text('Controls only the copied buffs beside the ink. Original buffs stay unchanged.', '只控制墨痕旁的 Buff 副本，原版 Buff 显示保持不变。') },
                         { key: 'HideNativeHealth', type: 'toggle', label: text('Hide original health bar', '隐藏原版生命条'), default: false,
